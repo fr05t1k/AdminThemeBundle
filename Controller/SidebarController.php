@@ -11,58 +11,75 @@ namespace Avanzu\AdminThemeBundle\Controller;
 use Avanzu\AdminThemeBundle\Event\ShowUserEvent;
 use Avanzu\AdminThemeBundle\Event\SidebarMenuEvent;
 use Avanzu\AdminThemeBundle\Event\ThemeEvents;
-use Symfony\Bundle\FrameworkBundle\Controller\Controller;
+use Symfony\Component\EventDispatcher\EventDispatcher;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 
-class SidebarController extends Controller
+class SidebarController extends EmitterController
 {
 
+    /**
+     * @return Response
+     */
     public function userPanelAction()
     {
 
-        if (!$this->getDispatcher()->hasListeners(ThemeEvents::THEME_SIDEBAR_USER)) {
+        if (!$this->hasListener(ThemeEvents::THEME_SIDEBAR_USER)) {
             return new Response();
         }
-        $userEvent = $this->getDispatcher()->dispatch(ThemeEvents::THEME_SIDEBAR_USER, new ShowUserEvent());
 
-        return $this->render(
-                    'AvanzuAdminThemeBundle:Sidebar:user-panel.html.twig',
-                        array(
-                            'user' => $userEvent->getUser()
-                        )
-        );
+        $userEvent = $this->triggerMethod(ThemeEvents::THEME_SIDEBAR_USER, new ShowUserEvent());
+
+        return $this->render('AvanzuAdminThemeBundle:Sidebar:user-panel.html.twig',array( 'user' => $userEvent->getUser() ));
     }
+
 
     /**
-     * @return EventDispatcher
+     * @return Response
      */
-    protected function getDispatcher()
-    {
-        return $this->get('event_dispatcher');
-    }
-
     public function searchFormAction()
     {
-
-
         return $this->render('AvanzuAdminThemeBundle:Sidebar:search-form.html.twig', array());
     }
 
+    /**
+     * @param Request $request
+     *
+     * @return Response
+     */
     public function menuAction(Request $request)
     {
+        if( $this->container->getParameter('avanzu_admin_theme.use_knp_menu') ) {
+            return $this->buildKnpMenu($request);
+        }
 
-        if (!$this->getDispatcher()->hasListeners(ThemeEvents::THEME_SIDEBAR_SETUP_MENU)) {
+        return $this->buildGenericMenu($request);
+
+    }
+
+    /**
+     * @param Request $request
+     *
+     * @return Response
+     */
+    protected function buildGenericMenu(Request $request)
+    {
+        if (!$this->hasListener(ThemeEvents::THEME_SIDEBAR_SETUP_MENU)) {
             return new Response();
         }
 
-        $event   = $this->getDispatcher()->dispatch(ThemeEvents::THEME_SIDEBAR_SETUP_MENU,new SidebarMenuEvent($request));
+        $event   = $this->triggerMethod(ThemeEvents::THEME_SIDEBAR_SETUP_MENU,new SidebarMenuEvent($request));
 
-        return $this->render(
-                    'AvanzuAdminThemeBundle:Sidebar:menu.html.twig',
-                        array(
-                            'menu' => $event->getItems()
-                        )
-        );
+        return $this->render('AvanzuAdminThemeBundle:Sidebar:menu.html.twig', array('menu' => $event->getItems()) );
+    }
+
+    /**
+     * @param Request $request
+     *
+     * @return Response
+     */
+    protected  function buildKnpMenu(Request $request)
+    {
+        return $this->render('AvanzuAdminThemeBundle:Sidebar:knp-menu.html.twig', array('menu' => 'main') );
     }
 }
