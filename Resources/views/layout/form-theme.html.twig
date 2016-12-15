@@ -17,7 +17,7 @@
     {% else %}
         {% set class = _class %}
     {% endif %}
-    {% if 'form-control' not in class  %}
+    {% if 'checkbox' not in types and 'form-control' not in class  %}
         {%  set class = class ~ ' form-control' %}
     {% endif %}
     {% set attr = attr|merge({'class' : class}) %}
@@ -160,7 +160,7 @@
 
 {% block form_label %}
 
-    {% if help is defined %}
+    {% if help is defined and help is not empty %}
         &nbsp; <a href="#" data-toggle="tooltip" data-original-title="{{ help }}"><i class="fa fa-question-circle"></i></a>
     {% endif %}
 
